@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC</title>
+    <script></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body>
+    <div id="div-chat">
+        <br>
+        <h3 id="my-peer">Your id: </h3>
+        <br>
+        <video id="localStream" width="300" controls></video>
+        <br>
+        <video id="remoteStream" width="300" controls></video>
+        <br>
+        <input type="text" id="remoteId" placeholder="Remote ID">
+        <button id="btnCall">Call</button>
+        <button id="btnEndCall">End Call</button>
+        <br>
+    </div>
+
+    <div id="div-dang-ky">
+        <input type="text" id="id" placeholder="Enter your id">
+        <input type="text" id="txtUserName" placeholder="Enter your usename">
+        <!-- <input type="text" id="RoomId" placeholder="Enter your RoomId"> -->
+        <button id="btnSignUp">Sign Up</button>
+    </div>
+
+    <!-- HTML -->
+    <div id="callConfirmation" style="display: none;">
+        <p>Bạn có muốn chấp nhận cuộc gọi không?</p>
+        <button id="btnAccept">Chấp nhận</button>
+        <button id="btnReject">Từ chối</button>
+    </div>
+
+</body>
+
+<script>
+
+    $('#div-chat').hide();
+
+    // xử lý webrtc
+    var peer = new Peer();
+
+    $('#btnSignUp').click(() => {
+        // Đăng ký
+        const usename = $('#txtUserName').val();
+        const id = $('#id').val();
+        $('#div-chat').show();
+        $('#div-dang-ky').hide();
+
+        peer = new Peer(id);
+
+        peer.on("open", id => {
+            $('#my-peer').append(id)
+        
+        });
+
+        // Caller
+        $('#btnCall').click(() => {
+            const id = $('#remoteId').val();
+            
+            openStream()
+            .then(stream => {
+                playStream('localStream', stream);
+        
+                const call = peer.call(id, stream);
+                call.on('stream', remoteStream => playStream('remoteStream', remoteStream));
+        
+                // Xử lý lỗi
+                call.on('error', error => {
+                    console.error('Cuộc gọi bị lỗi:', error);
+                    
+                    // Đóng luồng và ngắt kết nối
+                    closeStream(stream);
+                });
+            })
+            .catch(error => {
+                console.error('Không thể mở luồng:', error);
+            });
+        })
+
+        // Reciever
+        peer.on('call', call => {
+        openStream()
+        .then(stream => {
+            // Hiển thị giao diện xác nhận
+            $('#callConfirmation').show();
+
+            // Xử lý sự kiện khi người dùng chấp nhận cuộc gọi
+            $('#btnAccept').click(() => {
+                $('#callConfirmation').hide(); // Ẩn giao diện xác nhận
+
+                call.answer(stream);
+                playStream('localStream', stream);
+                call.on('stream', remoteStream => playStream('remoteStream', remoteStream));
+
+                // Xử lý lỗi
+                call.on('error', error => {
+                    console.error('Cuộc gọi bị lỗi:', error);
+                });
+            });
+
+            // Xử lý sự kiện khi người dùng từ chối cuộc gọi
+            $('#btnReject').click(() => {
+                $('#callConfirmation').hide(); // Ẩn giao diện xác nhận
+                console.log('Người dùng từ chối cuộc gọi.');
+            });
+        })
+        .catch(error => {
+            console.error('Không thể mở luồng:', error);
+        });
+    })
+    })
+
+
+
+    // xử lý luồng video
+    function openStream() {
+        const cofig = {audio: false, video: true};
+        return navigator.mediaDevices.getUserMedia(cofig);
+    }
+
+    function playStream(idVideoTag, stream) {
+        const video = document.getElementById(idVideoTag);
+
+        // Kiểm tra xem srcObject đã thay đổi
+        if (video.srcObject !== stream) {
+            video.srcObject = stream;
+
+            // Chờ sự kiện loadedmetadata trước khi gọi play
+            video.addEventListener('loadedmetadata', () => {
+                video.play().catch(error => {
+                    console.error('Không thể chơi video:', error);
+                });
+            });
+        } else {
+            // Nếu srcObject không thay đổi, có thể gọi play trực tiếp
+            video.play().catch(error => {
+                console.error('Không thể chơi video:', error);
+            });
+        }
+    }
+
+    $('#btnEndCall').click(() => {
+        // Tắt video
+        video.pause();
+        video.srcObject = null;
+    });
+
+
+    // Hàm đóng luồng
+    function closeStream(stream) {
+        if (stream) {
+            // Ngắt kết nối
+            stream.getTracks().forEach(track => track.stop());
+            
+            // Đóng luồng
+            const tracks = stream.getTracks();
+            tracks.forEach(track => track.stop());
+            
+            // Ẩn video
+            $('#localStream').get(0).srcObject = null;
+        }
+    }
+</script>
+</html>
