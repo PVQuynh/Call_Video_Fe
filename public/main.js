@@ -19,6 +19,7 @@ function playStream(idVideoTag, stream) {
 
             video.addEventListener('loadedmetadata', () => {
                 video.play();
+                console.log("22 video play")
             });
         } else {
             video.play().catch(error => {
@@ -34,6 +35,7 @@ function playStream(idVideoTag, stream) {
 function closeStream(stream) {
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
+        console.log("38 close stream")
     }
 }
 
@@ -50,6 +52,7 @@ function initializePeer(id, usename) {
         $('#div-chat').show();
         $('#my-peer').append(id);
         $('#my-name').append(usename);
+        console.log("55 peer open")
     });
 
     peer.on("error", (err) => {
@@ -63,12 +66,14 @@ function initializePeer(id, usename) {
         openStream()
             .then(stream => {
                 localStream = stream;
+                console.log("69 localStream " + localStream)
 
                 playStream('localStream', localStream);
-
                 const call = peer.call(remoteId, localStream);
-
-                call.on('stream', remoteStream => playStream('remoteStream', remoteStream));
+                call.on('stream', remoteStream => {
+                    console.log(' 74 Remote Stream received:', remoteStream);
+                    playStream('remoteStream', remoteStream);
+                });
 
                 call.on('error', error => {
                     console.error('Cuộc gọi bị lỗi:', error);
@@ -85,6 +90,7 @@ function initializePeer(id, usename) {
         openStream()
             .then(stream => {
                 localStream = stream;
+                console.log("93 localStream " + localStream)
 
                 $('#callConfirmation').show();
 
@@ -93,8 +99,11 @@ function initializePeer(id, usename) {
                     call.answer(localStream);
 
                     playStream('localStream', localStream);
+                    call.on('stream', remoteStream => {
+                        console.log(' 103 Remote Stream received:', remoteStream);
+                        playStream('remoteStream', remoteStream)
+                    });
 
-                    call.on('stream', remoteStream => playStream('remoteStream', remoteStream));
 
                     call.on('error', error => {
                         console.error('Cuộc gọi bị lỗi:', error);
@@ -115,6 +124,7 @@ function initializePeer(id, usename) {
     $('#btnEndCall').click(() => {
         closeStream(localStream);
         $('#localStream').get(0).srcObject = null;
+        console.log("btnEndCall")
     });
 }
 
