@@ -88,21 +88,25 @@ function playStream(idVideoTag, stream) {
     const video = document.getElementById(idVideoTag);
 
     // Kiểm tra xem srcObject đã thay đổi
-    if (video.srcObject !== stream) {
-        video.srcObject = stream;
-
-        // Chờ sự kiện loadedmetadata trước khi gọi play
-        video.addEventListener('loadedmetadata', () => {
+    try {
+        if (video.srcObject !== stream) {
+            video.srcObject = stream;
+    
+            // Chờ sự kiện loadedmetadata trước khi gọi play
+            video.addEventListener('loadedmetadata', () => {
+                video.play().catch(error => {
+                    console.error('Không thể chơi video:', error);
+                });
+            });
+        } else {
+            // Nếu srcObject không thay đổi, có thể gọi play trực tiếp
             video.play().catch(error => {
                 console.error('Không thể chơi video:', error);
             });
-        });
-    } else {
-        // Nếu srcObject không thay đổi, có thể gọi play trực tiếp
-        video.play().catch(error => {
-            console.error('Không thể chơi video:', error);
-        });
-    }
+        }
+      } catch (error) {
+        console.error('Không thể phát luồng:', error);
+      }
 }
 
 $('#btnEndCall').click(() => {
