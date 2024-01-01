@@ -14,14 +14,15 @@
         <div class="row">
             <div class="col-md-12">
                 <h3 id="my-peer">Your id: </h3>
+                <h3 id="my-name">Your name: </h3>
             </div>
         </div>
         <div class="row">
             <div class="col-md-6">
-                <video id="localStream" width="100%" controls></video>
+                <video id="localStream" width="100%" height="auto" controls></video>
             </div>
             <div class="col-md-6">
-                <video id="remoteStream" width="100%" controls></video>
+                <video id="remoteStream" width="100%" height="auto" controls></video>
             </div>
         </div>
         <div class="row mt-2">
@@ -59,9 +60,6 @@
         <button id="btnReject" class="btn btn-danger">Từ chối</button>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
@@ -74,20 +72,21 @@
     $('#div-chat').hide();
 
     // xử lý webrtc
-    var peer = new Peer();
-
     $('#btnSignUp').click(() => {
-        // Đăng ký
+         // Đăng ký
         const usename = $('#txtUserName').val();
         const id = $('#id').val();
-        $('#div-chat').show();
-        $('#div-dang-ky').hide();
+        console.log("id: " + id + ", name: " + usename)
 
-        peer = new Peer(id);
-
-        peer.on("open", id => {
-            $('#my-peer').append(id)
-        
+        const peer = new Peer(id);
+        peer.on("open", () => {
+            $('#div-dang-ky').hide();
+            $('#div-chat').show();
+            $('#my-peer').append(id);
+            $('#my-name').append(usename);
+        });
+        peer.on("error", (err) => {
+            console.error("Peer connection error: ", err);
         });
 
         // Caller
