@@ -5,9 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>WebRTC</title>
     <script></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-
-  
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script> -->
+ 
+    <link rel="stylesheet" href="./public/bootstrap.css">
+    <script src="./public/jquery.js"></script>
+    <script src="./public/popper.js" ></script>
+    <script src="./public/bootstrap.js"></script>
+    <script src="./public/popper.js"></script>
+    <script src="./public/peer.js"></script>
 </head>
 <body class="container">
     <div id="div-chat" class="mt-4">
@@ -65,139 +75,6 @@
 
 </body>
 
-<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-<script>
 
-    $('#div-chat').hide();
-
-    // xử lý webrtc
-    $('#btnSignUp').click(() => {
-         // Đăng ký
-        const usename = $('#txtUserName').val();
-        const id = $('#id').val();
-        console.log("id: " + id + ", name: " + usename)
-
-        const peer = new Peer(id);
-        peer.on("open", () => {
-            $('#div-dang-ky').hide();
-            $('#div-chat').show();
-            $('#my-peer').append(id);
-            $('#my-name').append(usename);
-        });
-        peer.on("error", (err) => {
-            console.error("Peer connection error: ", err);
-        });
-
-        // Caller
-        $('#btnCall').click(() => {
-            const id = $('#remoteId').val();
-            
-            openStream()
-            .then(stream => {
-                playStream('localStream', stream);
-        
-                const call = peer.call(id, stream);
-                call.on('stream', remoteStream => playStream('remoteStream', remoteStream));
-        
-                // Xử lý lỗi
-                call.on('error', error => {
-                    console.error('Cuộc gọi bị lỗi:', error);
-                    
-                    // Đóng luồng và ngắt kết nối
-                    closeStream(stream);
-                });
-            })
-            .catch(error => {
-                console.error('Không thể mở luồng:', error);
-            });
-        })
-
-        // Reciever
-        peer.on('call', call => {
-        openStream()
-        .then(stream => {
-            // Hiển thị giao diện xác nhận
-            $('#callConfirmation').show();
-
-            // Xử lý sự kiện khi người dùng chấp nhận cuộc gọi
-            $('#btnAccept').click(() => {
-                $('#callConfirmation').hide(); // Ẩn giao diện xác nhận
-
-                call.answer(stream);
-                playStream('localStream', stream);
-                call.on('stream', remoteStream => playStream('remoteStream', remoteStream));
-
-                // Xử lý lỗi
-                call.on('error', error => {
-                    console.error('Cuộc gọi bị lỗi:', error);
-                });
-            });
-
-            // Xử lý sự kiện khi người dùng từ chối cuộc gọi
-            $('#btnReject').click(() => {
-                $('#callConfirmation').hide(); // Ẩn giao diện xác nhận
-                console.log('Người dùng từ chối cuộc gọi.');
-            });
-        })
-        .catch(error => {
-            console.error('Không thể mở luồng:', error);
-        });
-    })
-    })
-
-
-
-    // xử lý luồng video
-    function openStream() {
-        const cofig = {audio: false, video: true};
-        return navigator.mediaDevices.getUserMedia(cofig);
-    }
-
-    function playStream(idVideoTag, stream) {
-        const video = document.getElementById(idVideoTag);
-
-        // Kiểm tra xem srcObject đã thay đổi
-        if (video.srcObject !== stream) {
-            video.srcObject = stream;
-
-            // Chờ sự kiện loadedmetadata trước khi gọi play
-            video.addEventListener('loadedmetadata', () => {
-                video.play().catch(error => {
-                    console.error('Không thể chơi video:', error);
-                });
-            });
-        } else {
-            // Nếu srcObject không thay đổi, có thể gọi play trực tiếp
-            video.play().catch(error => {
-                console.error('Không thể chơi video:', error);
-            });
-        }
-    }
-
-    $('#btnEndCall').click(() => {
-        // Tắt video
-        video.pause();
-        video.srcObject = null;
-    });
-
-
-    // Hàm đóng luồng
-    function closeStream(stream) {
-        if (stream) {
-            // Ngắt kết nối
-            stream.getTracks().forEach(track => track.stop());
-            
-            // Đóng luồng
-            const tracks = stream.getTracks();
-            tracks.forEach(track => track.stop());
-            
-            // Ẩn video
-            $('#localStream').get(0).srcObject = null;
-        }
-    }
-</script>
+<script src="./public/main.js"></script>
 </html>
