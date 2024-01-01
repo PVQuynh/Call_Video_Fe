@@ -1,132 +1,128 @@
+let peer;
+let localStream;
+
 $('#div-chat').hide();
 
-    // xử lý webrtc
-$('#btnSignUp').click(() => {
-        // Đăng ký
-    const usename = $('#txtUserName').val();
-    const id = $('#id').val();
-    console.log("id: " + id + ", name: " + usename)
+// Hàm mở luồng video
+function openStream() {
+    const config = { audio: false, video: true };
+    return navigator.mediaDevices.getUserMedia(config);
+}
 
-    const peer = new Peer(id);
-    
+// Hàm chơi luồng video
+function playStream(idVideoTag, stream) {
+    const video = document.getElementById(idVideoTag);
+
+    try {
+        if (video.srcObject !== stream) {
+            video.srcObject = stream;
+
+            video.addEventListener('loadedmetadata', () => {
+                video.play();
+            });
+        } else {
+            video.play().catch(error => {
+                console.error('Không thể chơi video:', error);
+            });
+        }
+    } catch (error) {
+        console.error('Không thể phát luồng:', error);
+    }
+}
+
+// Hàm đóng luồng video
+function closeStream(stream) {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+}
+
+// Hàm khởi tạo Peer
+function initializePeer(id, usename) {
+    if (peer) {
+        peer.destroy();
+    }
+
+    peer = new Peer(id);
+
     peer.on("open", () => {
         $('#div-dang-ky').hide();
         $('#div-chat').show();
         $('#my-peer').append(id);
         $('#my-name').append(usename);
     });
+
     peer.on("error", (err) => {
         console.error("Peer connection error: ", err);
     });
 
     // Caller
     $('#btnCall').click(() => {
-        const id = $('#remoteId').val();
-        
+        const remoteId = $('#remoteId').val();
+
         openStream()
-        .then(stream => {
-            playStream('localStream', stream);
-    
-            const call = peer.call(id, stream);
-            call.on('stream', remoteStream => playStream('remoteStream', remoteStream));
-    
-            // Xử lý lỗi
-            call.on('error', error => {
-                console.error('Cuộc gọi bị lỗi:', error);
-                
-                // Đóng luồng và ngắt kết nối
-                closeStream(stream);
-            });
-        })
-        .catch(error => {
-            console.error('Không thể mở luồng:', error);
-        });
-    })
+            .then(stream => {
+                localStream = stream;
 
-    // Reciever
-    peer.on('call', call => {
-    openStream()
-    .then(stream => {
-        // Hiển thị giao diện xác nhận
-        $('#callConfirmation').show();
+                playStream('localStream', localStream);
 
-        // Xử lý sự kiện khi người dùng chấp nhận cuộc gọi
-        $('#btnAccept').click(() => {
-            $('#callConfirmation').hide(); // Ẩn giao diện xác nhận
+                const call = peer.call(remoteId, localStream);
 
-            call.answer(stream);
-            playStream('localStream', stream);
-            call.on('stream', remoteStream => playStream('remoteStream', remoteStream));
+                call.on('stream', remoteStream => playStream('remoteStream', remoteStream));
 
-            // Xử lý lỗi
-            call.on('error', error => {
-                console.error('Cuộc gọi bị lỗi:', error);
-            });
-        });
-
-        // Xử lý sự kiện khi người dùng từ chối cuộc gọi
-        $('#btnReject').click(() => {
-            $('#callConfirmation').hide(); // Ẩn giao diện xác nhận
-            console.log('Người dùng từ chối cuộc gọi.');
-        });
-    })
-    .catch(error => {
-        console.error('Không thể mở luồng:', error);
-    });
-})
-})
-
-
-
-// xử lý luồng video
-function openStream() {
-    const cofig = {audio: false, video: true};
-    return navigator.mediaDevices.getUserMedia(cofig);
-}
-
-function playStream(idVideoTag, stream) {
-    const video = document.getElementById(idVideoTag);
-
-    // Kiểm tra xem srcObject đã thay đổi
-    try {
-        if (video.srcObject !== stream) {
-            video.srcObject = stream;
-    
-            // Chờ sự kiện loadedmetadata trước khi gọi play
-            video.addEventListener('loadedmetadata', () => {
-                video.play().catch(error => {
-                    console.error('Không thể chơi video:', error);
+                call.on('error', error => {
+                    console.error('Cuộc gọi bị lỗi:', error);
+                    closeStream(localStream);
                 });
+            })
+            .catch(error => {
+                console.error('Không thể mở luồng:', error);
             });
-        } else {
-            // Nếu srcObject không thay đổi, có thể gọi play trực tiếp
-            video.play().catch(error => {
-                console.error('Không thể chơi video:', error);
+    });
+
+    // Receiver
+    peer.on('call', call => {
+        openStream()
+            .then(stream => {
+                localStream = stream;
+
+                $('#callConfirmation').show();
+
+                $('#btnAccept').click(() => {
+                    $('#callConfirmation').hide();
+                    call.answer(localStream);
+
+                    playStream('localStream', localStream);
+
+                    call.on('stream', remoteStream => playStream('remoteStream', remoteStream));
+
+                    call.on('error', error => {
+                        console.error('Cuộc gọi bị lỗi:', error);
+                    });
+                });
+
+                $('#btnReject').click(() => {
+                    $('#callConfirmation').hide();
+                    console.log('Người dùng từ chối cuộc gọi.');
+                });
+            })
+            .catch(error => {
+                console.error('Không thể mở luồng:', error);
             });
-        }
-      } catch (error) {
-        console.error('Không thể phát luồng:', error);
-      }
-}
+    });
 
-$('#btnEndCall').click(() => {
-    // Tắt video
-    video.pause();
-    video.srcObject = null;
-});
-
-
-// Hàm đóng luồng
-function closeStream(stream) {
-    if (stream) {
-        // Ngắt kết nối
-        stream.getTracks().forEach(track => track.stop());
-        
-        // Đóng luồng
-        const tracks = stream.getTracks();
-        tracks.forEach(track => track.stop());
-        
-        // Ẩn video
+    // End Call
+    $('#btnEndCall').click(() => {
+        closeStream(localStream);
         $('#localStream').get(0).srcObject = null;
-    }
+    });
 }
+
+// Sự kiện đăng ký
+$('#btnSignUp').click(() => {
+    const username = $('#txtUserName').val();
+    const id = $('#id').val();
+    console.log("id: " + id + ", name: " + username);
+
+    initializePeer(id, username);
+});
